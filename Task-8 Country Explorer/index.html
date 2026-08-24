@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Country Explorer</title>
+
+    <link rel="stylesheet" href="style.css">
+
+    <!-- Google Font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+
+</head>
+<body>
+
+<!-- ================= HEADER ================= -->
+
+<header>
+
+    <div id="logo" class="logo" role="button" tabindex="0">
+
+        🌍 Country Explorer
+
+    </div>
+
+    <button id="darkModeBtn">
+
+        <i class="fa-solid fa-moon"></i>
+        Dark Mode
+
+    </button>
+
+</header>
+
+
+<!-- ================= CONTROLS ================= -->
+
+<section class="controls">
+
+    <!-- Search -->
+
+    <div class="search-box">
+
+        <i class="fa-solid fa-magnifying-glass"></i>
+
+        <input
+            type="text"
+            id="search"
+            placeholder="Search country..."
+        >
+
+    </div>
+
+    <!-- Region -->
+
+    <select id="regionFilter">
+
+        <option value="All">All Regions</option>
+
+        <option>Africa</option>
+
+        <option>Americas</option>
+
+        <option>Asia</option>
+
+        <option>Europe</option>
+
+        <option>Oceania</option>
+
+    </select>
+
+
+    <!-- Sort -->
+
+    <select id="sortFilter">
+
+        <option value="default">Sort</option>
+
+        <option value="az">
+            Name (A-Z)
+        </option>
+
+        <option value="za">
+            Name (Z-A)
+        </option>
+
+        <option value="high">
+            Population High → Low
+        </option>
+
+        <option value="low">
+            Population Low → High
+        </option>
+
+    </select>
+
+</section>
+
+
+<!-- ================= TOP INFO ================= -->
+
+<section class="top-info">
+
+    <div id="countryCount">
+
+        Showing 0 Countries
+
+    </div>
+
+    <button id="showFav">
+
+        ❤️ Favourites
+
+    </button>
+
+</section>
+
+
+
+<!-- ================= LOADING ================= -->
+
+<div id="loading" class="message">
+
+    <div class="spinner"></div>
+
+    <p>Fetching Countries...</p>
+
+</div>
+
+
+
+<!-- ================= ERROR ================= -->
+
+<div id="error" class="message">
+
+</div>
+
+
+
+<!-- ================= COUNTRY CARDS ================= -->
+
+<section id="countryContainer">
+
+</section>
+
+
+
+<!-- ================= MODAL ================= -->
+
+<div id="modal" class="modal">
+
+    <div class="modal-content">
+
+        <img
+            id="modalFlag"
+            src=""
+            alt=""
+        >
+
+        <h2 id="modalName">
+
+        </h2>
+
+        <div class="details">
+
+            <p>
+
+                <strong>Official Name :</strong>
+
+                <span id="officialName"></span>
+
+            </p>
+
+            <p>
+
+                <strong>Capital :</strong>
+
+                <span id="capital"></span>
+
+            </p>
+
+            <p>
+
+                <strong>Region :</strong>
+
+                <span id="region"></span>
+
+            </p>
+
+            <p>
+
+                <strong>Sub Region :</strong>
+
+                <span id="subregion"></span>
+
+            </p>
+
+            <p>
+
+                <strong>Population :</strong>
+
+                <span id="population"></span>
+
+            </p>
+
+            <p>
+
+                <strong>Area :</strong>
+
+                <span id="area"></span>
+
+            </p>
+
+            <p>
+
+                <strong>Languages :</strong>
+
+                <span id="languages"></span>
+
+            </p>
+
+            <p>
+
+                <strong>Currencies :</strong>
+
+                <span id="currencies"></span>
+
+            </p>
+
+        </div>
+
+        <div class="modal-footer">
+            <button id="closeModal">
+                ← Back
+            </button>
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- ================= TEMPLATE FOR CARD ================= -->
+
+<template id="countryTemplate">
+
+    <div class="country-card">
+
+        <img
+            class="flag"
+            src=""
+            alt=""
+        >
+
+        <div class="card-body">
+
+            <h2 class="country-name">
+
+            </h2>
+
+            <p>
+
+                <strong>Capital:</strong>
+
+                <span class="country-capital"></span>
+
+            </p>
+
+            <p>
+
+                <strong>Region:</strong>
+
+                <span class="country-region"></span>
+
+            </p>
+
+            <p>
+
+                <strong>Population:</strong>
+
+                <span class="country-population"></span>
+
+            </p>
+
+        </div>
+
+        <button class="favBtn">
+
+            🤍
+
+        </button>
+
+    </div>
+
+</template>
+
+
+
+<script src="script.js"></script>
+
+</body>
+</html>

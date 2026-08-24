@@ -1,0 +1,65 @@
+1. What is the structure of the API response? How do you access the flag image URL, the languages, and the currencies from the JSON?
+
+A. The REST Countries API returns an array of country objects. Each object contains information about one country, such as its name, flag, capital, region, population, languages, currencies, and other details.
+
+    The property paths I used in my project are:
+    Country Name: country.name.common
+    Official Name: country.name.official
+    Flag Image URL: country.flags.png
+    Capital: country.capital[0]
+    Region: country.region
+    Subregion: country.subregion
+    Population: country.population
+    Area: country.area
+    Languages: country.languages
+    Currencies: country.currencies
+
+    Since languages and currencies are objects, I converted them into readable text using JavaScript.
+
+    For languages:
+    Object.values(country.languages).join(", ")
+
+    For currencies:
+    Object.entries(country.currencies)
+        .map(([code, info]) => `${info.name} (${code})`)
+        .join(", ")
+
+2. You fetch all data once on load and filter in JavaScript. Why is this better than calling the API again every time the user types in the search box?
+A. I fetch all the country data only once when the page loads and store it in an array. After that, searching and filtering are done using JavaScript without making another API request.
+    This approach is better because it makes the search results appear instantly, reduces unnecessary API requests, improves the application's performance, and reduces the load on the server. It also provides a smoother user experience because filtering happens locally even when the user types very quickly.
+    If I called the API every time the user typed a letter, it would send many unnecessary requests, making the application slower and increasing network traffic.
+
+3. What happens in your code when the API call fails? Show the exact code that handles it.
+A. If the API request fails due to a network issue, server problem, or an invalid response, the error is handled using a try...catch block. 
+    Instead of leaving the page blank, my application displays the message "Failed to load countries. Please try again." The loading indicator is also hidden so that the user knows the request has finished.
+
+    The code I used is:
+        try {
+
+        loading.style.display = "block";
+        error.style.display = "none";
+
+        const response = await fetch(apiUrl, {
+            headers: apiHeaders
+        });
+
+        if (!response.ok) {
+            throw new Error("Failed to fetch countries");
+        }
+
+        const payload = await response.json();
+
+        countries = payload.map(normalizeCountry);
+
+        applyFiltersAndSort();
+
+    } catch (err) {
+
+        error.innerHTML = "<p>Failed to load countries. Please try again.</p>";
+        error.style.display = "block";
+
+    } finally {
+
+        loading.style.display = "none";
+
+    }
