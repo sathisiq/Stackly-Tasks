@@ -18,8 +18,8 @@ export default function AdminProducts() {
   const fetchProducts = async () => {
     setLoading(true);
     try {
-      const res = await api.get('/api/products');
-      setProducts(res.data || []);
+      const res = await api.get('/api/products', { params: { limit: 100 } });
+      setProducts(res.data?.products || (Array.isArray(res.data) ? res.data : []));
     } catch (err) {
       console.error('Failed to load products', err);
     } finally {

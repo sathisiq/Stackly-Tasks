@@ -1,4 +1,5 @@
 import os
+import math
 from flask import Flask, request, jsonify, session
 from flask_bcrypt import Bcrypt
 from flask_cors import CORS
@@ -191,47 +192,86 @@ def get_categories():
 @app.route('/api/products', methods=['GET'])
 def get_products():
     category_param = request.args.get('category')
-    search_query = request.args.get('search')
+    search_query = request.args.get('search', '').strip()
     sort_option = request.args.get('sort', 'newest')
 
-    query = """
-        SELECT p.id, p.name, p.description, p.price, p.stock,
-               p.category_id, c.name AS category_name, p.image_url, p.created_at
-        FROM products p
-        LEFT JOIN categories c ON p.category_id = c.id
-        WHERE 1=1
-    """
+    # Pagination parameters: ?page=1&limit=8
+    try:
+        page = max(1, int(request.args.get('page', 1)))
+    except (ValueError, TypeError):
+        page = 1
+
+    try:
+        limit = max(1, int(request.args.get('limit', 8)))
+    except (ValueError, TypeError):
+        limit = 8
+
+    offset = (page - 1) * limit
+
+    # Base WHERE clause
+    where_clauses = []
     params = []
 
     # Category filtering (by id or by name)
     if category_param:
         if category_param.isdigit():
-            query += " AND p.category_id = %s"
+            where_clauses.append("p.category_id = %s")
             params.append(int(category_param))
         else:
-            query += " AND c.name = %s"
+            where_clauses.append("c.name = %s")
             params.append(category_param)
 
     # Search keyword
     if search_query:
-        query += " AND (p.name LIKE %s OR p.description LIKE %s)"
+        where_clauses.append("(p.name LIKE %s OR p.description LIKE %s)")
         search_pattern = f"%{search_query}%"
         params.extend([search_pattern, search_pattern])
 
+    where_sql = (" WHERE " + " AND ".join(where_clauses)) if where_clauses else ""
+
     # Sort options: price_asc, price_desc, newest
     if sort_option == 'price_asc':
-        query += " ORDER BY p.price ASC"
+        order_sql = " ORDER BY p.price ASC, p.id ASC"
     elif sort_option == 'price_desc':
-        query += " ORDER BY p.price DESC"
+        order_sql = " ORDER BY p.price DESC, p.id DESC"
     else:
-        query += " ORDER BY p.created_at DESC, p.id DESC"
+        order_sql = " ORDER BY p.created_at DESC, p.id DESC"
 
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
     try:
-        cursor.execute(query, params)
+        # 1. Count total matching records first
+        count_query = f"""
+            SELECT COUNT(*) AS total
+            FROM products p
+            LEFT JOIN categories c ON p.category_id = c.id
+            {where_sql}
+        """
+        cursor.execute(count_query, params)
+        count_row = cursor.fetchone()
+        total = count_row['total'] if count_row else 0
+        total_pages = math.ceil(total / limit) if total > 0 else 1
+
+        # 2. Fetch only the current page using LIMIT and OFFSET
+        data_query = f"""
+            SELECT p.id, p.name, p.description, p.price, p.stock,
+                   p.category_id, c.name AS category_name, p.image_url, p.created_at
+            FROM products p
+            LEFT JOIN categories c ON p.category_id = c.id
+            {where_sql}
+            {order_sql}
+            LIMIT %s OFFSET %s
+        """
+        cursor.execute(data_query, params + [limit, offset])
         products = cursor.fetchall()
-        return jsonify(serialize_rows(products)), 200
+
+        return jsonify({
+            'products': serialize_rows(products),
+            'total': total,
+            'page': page,
+            'limit': limit,
+            'total_pages': total_pages
+        }), 200
     finally:
         cursor.close()
         conn.close()
@@ -564,16 +604,61 @@ def get_all_orders():
     if not require_admin():
         return jsonify({'error': 'Forbidden: Admin privilege required.'}), 403
 
+    # Pagination parameters: ?page=1&limit=10
+    try:
+        page = max(1, int(request.args.get('page', 1)))
+    except (ValueError, TypeError):
+        page = 1
+
+    try:
+        limit = max(1, int(request.args.get('limit', 10)))
+    except (ValueError, TypeError):
+        limit = 10
+
+    offset = (page - 1) * limit
+    search = request.args.get('search', '').strip()
+    status = request.args.get('status', '').strip()
+
+    where_clauses = []
+    params = []
+
+    if status and status != 'ALL':
+        where_clauses.append("o.status = %s")
+        params.append(status)
+
+    if search:
+        where_clauses.append("(CAST(o.id AS CHAR) LIKE %s OR u.name LIKE %s OR u.email LIKE %s OR o.address LIKE %s)")
+        search_pattern = f"%{search}%"
+        params.extend([search_pattern, search_pattern, search_pattern, search_pattern])
+
+    where_sql = (" WHERE " + " AND ".join(where_clauses)) if where_clauses else ""
+
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
     try:
-        cursor.execute("""
+        # 1. Count total matching records
+        count_query = f"""
+            SELECT COUNT(*) AS total
+            FROM orders o
+            LEFT JOIN users u ON o.user_id = u.id
+            {where_sql}
+        """
+        cursor.execute(count_query, params)
+        count_row = cursor.fetchone()
+        total = count_row['total'] if count_row else 0
+        total_pages = math.ceil(total / limit) if total > 0 else 1
+
+        # 2. Fetch only the paginated slice
+        data_query = f"""
             SELECT o.id, o.user_id, u.name AS customer_name, u.email AS customer_email,
                    o.total_amount, o.status, o.address, o.ordered_at
             FROM orders o
             LEFT JOIN users u ON o.user_id = u.id
-            ORDER BY o.ordered_at DESC, o.id DESC;
-        """)
+            {where_sql}
+            ORDER BY o.ordered_at DESC, o.id DESC
+            LIMIT %s OFFSET %s
+        """
+        cursor.execute(data_query, params + [limit, offset])
         orders = cursor.fetchall()
 
         order_list = []
@@ -590,7 +675,13 @@ def get_all_orders():
             order_data['items'] = serialize_rows(items)
             order_list.append(order_data)
 
-        return jsonify(order_list), 200
+        return jsonify({
+            'orders': order_list,
+            'total': total,
+            'page': page,
+            'limit': limit,
+            'total_pages': total_pages
+        }), 200
     finally:
         cursor.close()
         conn.close()
