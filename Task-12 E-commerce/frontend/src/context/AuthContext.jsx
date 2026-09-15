@@ -7,12 +7,19 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Check if session is already active on initial load
+  // Check if JWT token is stored on initial load and restore user session
   useEffect(() => {
     checkAuth();
   }, []);
 
   async function checkAuth() {
+    const token = localStorage.getItem('access_token');
+    if (!token) {
+      setUser(null);
+      setLoading(false);
+      return;
+    }
+
     try {
       const response = await api.get('/api/me');
       if (response.data && response.data.user) {
@@ -21,6 +28,9 @@ export function AuthProvider({ children }) {
         setUser(null);
       }
     } catch (err) {
+      // Token invalid or expired and refresh failed
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('refresh_token');
       setUser(null);
     } finally {
       setLoading(false);
@@ -29,26 +39,44 @@ export function AuthProvider({ children }) {
 
   async function login(email, password) {
     const response = await api.post('/api/login', { email, password });
-    if (response.data && response.data.user) {
-      setUser(response.data.user);
+    if (response.data) {
+      if (response.data.access_token) {
+        localStorage.setItem('access_token', response.data.access_token);
+      }
+      if (response.data.refresh_token) {
+        localStorage.setItem('refresh_token', response.data.refresh_token);
+      }
+      if (response.data.user) {
+        setUser(response.data.user);
+      }
     }
     return response.data;
   }
 
   async function register(name, email, password, role = 'customer') {
     const response = await api.post('/api/register', { name, email, password, role });
-    if (response.data && response.data.user) {
-      setUser(response.data.user);
+    if (response.data) {
+      if (response.data.access_token) {
+        localStorage.setItem('access_token', response.data.access_token);
+      }
+      if (response.data.refresh_token) {
+        localStorage.setItem('refresh_token', response.data.refresh_token);
+      }
+      if (response.data.user) {
+        setUser(response.data.user);
+      }
     }
     return response.data;
   }
 
   async function logout() {
     try {
-      await api.get('/api/logout');
+      await api.post('/api/logout');
     } catch (e) {
       console.error('Logout error', e);
     } finally {
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('refresh_token');
       setUser(null);
     }
   }

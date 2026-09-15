@@ -102,7 +102,11 @@ export default function Navbar() {
 
             {/* User Profile / Auth State */}
             {isAuthenticated ? (
-              <div className="relative">
+              <div className="relative flex items-center gap-2">
+                <span className="hidden lg:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                  JWT Bearer
+                </span>
                 <button
                   onClick={() => setUserDropdownOpen(!userDropdownOpen)}
                   className="flex items-center gap-2 p-1.5 sm:px-3 sm:py-2 rounded-xl bg-slate-100 hover:bg-slate-200/80 transition-colors text-slate-800 text-sm font-semibold"
@@ -127,15 +131,20 @@ export default function Navbar() {
                       className="fixed inset-0 z-10"
                       onClick={() => setUserDropdownOpen(false)}
                     />
-                    <div className="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-2xl border border-slate-100 py-2 z-20 animate-fadeIn">
+                    <div className="absolute right-0 mt-2 top-full w-56 bg-white rounded-2xl shadow-2xl border border-slate-100 py-2 z-20 animate-fadeIn">
                       <div className="px-4 py-2 border-b border-slate-100">
                         <p className="text-xs text-slate-400 font-medium">Signed in as</p>
                         <p className="text-sm font-bold text-slate-800 truncate">{user.email}</p>
-                        <span className={`inline-block mt-1 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${
-                          isAdmin ? 'bg-purple-100 text-purple-800' : 'bg-slate-100 text-slate-700'
-                        }`}>
-                          {user.role}
-                        </span>
+                        <div className="flex items-center gap-1.5 mt-1.5">
+                          <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${
+                            isAdmin ? 'bg-purple-100 text-purple-800' : 'bg-slate-100 text-slate-700'
+                          }`}>
+                            {user.role}
+                          </span>
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
+                            JWT Stateless
+                          </span>
+                        </div>
                       </div>
 
                       <Link
